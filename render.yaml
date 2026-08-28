@@ -3,10 +3,10 @@ services:
   - type: web
     name: ib-backend
     runtime: node
-    rootDir: backend
+    rootDir: .
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install && npm --workspace backend run build
+    startCommand: npm --workspace backend run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
