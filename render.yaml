@@ -1,0 +1,43 @@
+services:
+  # ── 后端：Express + TypeScript + Mongoose（Render Web Service）──
+  - type: web
+    name: ib-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      # 可选自保活：填后端自身地址（https://ib-backend.onrender.com/api/health）
+      # 则每 10 分钟自请求一次；不设置时用外部 cron ping /api/health
+      - key: SELF_PING_URL
+        sync: false
+
+  # ── 前端：Vite + React 18 + TypeScript（Render Static Site）──
+  - type: web
+    name: ib-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      # SPA 回写：深链直接访问时返回 index.html，由前端路由接管
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false

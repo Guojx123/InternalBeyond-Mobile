@@ -1,0 +1,251 @@
+:root {
+  /* 设计令牌：从原 index.html 抽出的液态玻璃 / 双主题变量 */
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+
+  /* Internal（明亮） */
+  --tx: #0a1e42;
+  --tx2: #3d5788;
+  --tx3: #7d92b5;
+  --acc: #2a6bb0;
+  --glass: rgba(255, 255, 255, 0.4);
+  --glass-line: rgba(255, 255, 255, 0.74);
+  --glass-shadow: 0 10px 36px rgba(90, 120, 170, 0.14);
+  --panel: rgba(255, 255, 255, 0.4);
+  --panel-line: rgba(255, 255, 255, 0.7);
+  --line: rgba(140, 170, 220, 0.32);
+  --danger: #c05555;
+  --gold: #c9a86a;
+  --serif: 'Cormorant Garamond', Georgia, 'Noto Serif SC', 'Songti SC', serif;
+  --disp: 'Raleway', 'Noto Sans SC', 'PingFang SC', sans-serif;
+  --sys: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+  --monoP: 'IBM Plex Mono', ui-monospace, 'Menlo', 'Consolas', monospace;
+}
+
+body.theme-infernal {
+  /* Infernal（暗色） */
+  --tx: #e0e6f2;
+  --tx2: #adb8d0;
+  --tx3: #7e90b2;
+  --acc: #72a8d8;
+  --glass: rgba(20, 28, 52, 0.46);
+  --glass-line: rgba(165, 188, 230, 0.26);
+  --glass-shadow: 0 10px 36px rgba(0, 0, 0, 0.32);
+  --panel: rgba(18, 26, 48, 0.5);
+  --panel-line: rgba(165, 188, 230, 0.22);
+  --line: rgba(165, 188, 230, 0.22);
+  --danger: #e08a8a;
+  --gold: #d0a44e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 柔光氛围：固定一层缓慢呼吸的光晕，强化液态玻璃质感 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 30% at 18% 12%, color-mix(in srgb, var(--acc) 22%, transparent), transparent 70%),
+    radial-gradient(34% 28% at 84% 78%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%);
+  animation: aurora 18s ease-in-out infinite alternate;
+  opacity: 0.85;
+}
+@keyframes aurora {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to { transform: translate3d(3%, 2%, 0) scale(1.06); }
+}
+
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
+  color: var(--tx);
+  min-height: 100vh;
+  padding: calc(24px + var(--sat)) 16px calc(24px + var(--sab));
+  background: radial-gradient(140% 120% at 12% 0%, #eaf2fb 0%, #d6e3f4 46%, #c6d6ec 100%);
+}
+
+body.theme-infernal {
+  background: radial-gradient(140% 120% at 12% 0%, #1b2440 0%, #141a2e 50%, #0d1322 100%);
+}
+
+.glass {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18) 52%, rgba(214, 231, 248, 0.32));
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(20px) saturate(1.55);
+  -webkit-backdrop-filter: blur(20px) saturate(1.55);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+}
+body.theme-infernal .glass {
+  background: linear-gradient(155deg, rgba(120, 156, 212, 0.2), rgba(16, 24, 46, 0.34) 52%, rgba(40, 56, 92, 0.24));
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 6px 24px rgba(90, 120, 170, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  margin-bottom: 12px;
+  transition: transform 0.18s ease, box-shadow 0.25s ease;
+  animation: cardIn 0.5s cubic-bezier(0.22, 0.72, 0.28, 1) both;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(90, 120, 170, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none; }
+}
+
+/* 玻璃高光：一道缓慢游走的斜向反光，强化液态质感 */
+.glass::after,
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    color-mix(in srgb, var(--acc) 16%, transparent) 50%,
+    transparent 66%
+  );
+  background-size: 250% 250%;
+  opacity: 0.35;
+  mix-blend-mode: screen;
+  animation: sheen 9s ease-in-out infinite;
+}
+@keyframes sheen {
+  0% { background-position: 130% 0; }
+  50% { background-position: -30% 0; }
+  100% { background-position: 130% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass::after, .card::after, body::before { animation: none; }
+}
+body.theme-infernal .card {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(165, 188, 230, 0.16);
+}
+
+.btn {
+  display: inline-block;
+  padding: 9px 20px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--tx2);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 14px rgba(90, 120, 170, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.2s, background 0.2s;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); box-shadow: inset 0 2px 6px rgba(60, 90, 140, 0.18); }
+.btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+.btn.primary {
+  color: var(--acc);
+  border-color: var(--acc);
+  background: linear-gradient(165deg, rgba(114, 168, 216, 0.22), rgba(114, 168, 216, 0.06));
+  box-shadow: 0 6px 18px rgba(42, 107, 176, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.btn.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: linear-gradient(165deg, rgba(192, 85, 85, 0.16), rgba(192, 85, 85, 0.04));
+}
+
+.fld,
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--tx);
+  font-size: 1rem;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+body.theme-infernal .fld,
+body.theme-infernal input,
+body.theme-infernal textarea,
+body.theme-infernal select {
+  background: rgba(14, 22, 42, 0.5);
+}
+.fld:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 22%, transparent);
+}
+textarea {
+  resize: vertical;
+  line-height: 1.65;
+}
+select { cursor: pointer; }
+
+/* 列表行（ICode / Music / Circle 复用） */
+.li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42), rgba(214, 230, 250, 0.18));
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+body.theme-infernal .li {
+  background: linear-gradient(160deg, rgba(120, 156, 212, 0.14), rgba(16, 24, 46, 0.28));
+}
+.li:hover { border-color: var(--acc); }
+.li-main { flex: 1; min-width: 0; }
+.li-name { font-size: 0.88rem; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-side { color: var(--tx3); font-size: 0.76rem; flex: none; }
+
+.cn { color: var(--tx3); font-weight: 400; }
+
+.comment {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(140, 170, 220, 0.1);
+  border: 1px solid var(--line);
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.muted {
+  color: var(--tx3);
+  font-size: 0.8rem;
+}

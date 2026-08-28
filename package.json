@@ -1,0 +1,22 @@
+{
+  "name": "internalbeyond-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "InternalBeyond-Mobile — full-stack rewrite (Vite+React+TS frontend, Express+TS+Mongoose backend)",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "npm --workspace backend run dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "build": "npm --workspace backend run build && npm --workspace frontend run build",
+    "start": "npm --workspace backend run start",
+    "typecheck": "npm --workspace backend run typecheck && npm --workspace frontend run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,362 @@
+/* 基础布局 / 滚动条 / 顶栏 / 抽屉 等骨架样式（液态玻璃，源自原 index.html 抽取） */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html,
+body {
+  height: 100%;
+}
+html {
+  overscroll-behavior-y: none;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(114, 168, 216, 0.32) transparent;
+}
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(114, 168, 216, 0.32);
+  border-radius: 3px;
+}
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
+  font-weight: 400;
+  color: var(--tx);
+  background: #dfe9f6;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  --serif: 'Cormorant Garamond', Georgia, 'Noto Serif SC', 'Songti SC', serif;
+  --disp: 'Raleway', 'Noto Sans SC', 'PingFang SC', sans-serif;
+  --sys: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+  --monoP: 'IBM Plex Mono', ui-monospace, 'Menlo', 'Consolas', monospace;
+}
+body.theme-infernal {
+  background: #141a2e;
+}
+
+/* 顶栏 */
+#top-veil {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(14px + var(--sat));
+  z-index: 29;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(240, 247, 255, 0.9), rgba(240, 247, 255, 0.55) 55%, transparent);
+  backdrop-filter: blur(5px);
+  -webkit-mask: linear-gradient(180deg, #000 45%, transparent);
+}
+body.theme-infernal #top-veil {
+  background: linear-gradient(180deg, rgba(13, 18, 34, 0.9), rgba(13, 18, 34, 0.5) 55%, transparent);
+}
+#topbar {
+  position: fixed;
+  top: calc(8px + var(--sat));
+  left: 10px;
+  right: 10px;
+  z-index: 30;
+  height: 50px;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+}
+#tb-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--disp);
+  font-weight: 400;
+  font-size: 0.92rem;
+  color: var(--tx);
+  letter-spacing: 0.14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-drop {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(175, 195, 228, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--acc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.theme-drop svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+body.theme-infernal .theme-drop svg {
+  fill: var(--acc);
+  stroke: var(--acc);
+}
+
+/* 抽屉 */
+#drawer-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(202, 220, 242, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s;
+}
+#drawer-scrim.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+#drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 80%;
+  max-width: 322px;
+  z-index: 41;
+  background: var(--glass);
+  border-right: 1px solid var(--glass-line);
+  border-radius: 0 26px 26px 0;
+  backdrop-filter: blur(30px) saturate(1.4);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  box-shadow: 14px 0 44px rgba(60, 90, 140, 0.18);
+  transform: translateX(-104%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0.28, 1);
+  display: flex;
+  flex-direction: column;
+  padding: calc(34px + var(--sat)) 0 calc(18px + var(--sab));
+}
+body:not(.theme-infernal) #drawer {
+  background: linear-gradient(162deg, rgba(255, 255, 255, 0.5), rgba(240, 248, 255, 0.24) 52%, rgba(255, 255, 255, 0.36));
+}
+#drawer.open {
+  transform: none;
+}
+.dw-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 2px 24px 14px;
+}
+.dw-seal {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--acc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.85), rgba(214, 231, 248, 0.35) 62%, rgba(170, 198, 232, 0.22));
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+body.theme-infernal .dw-seal {
+  background: radial-gradient(circle at 34% 28%, rgba(96, 128, 172, 0.4), rgba(28, 40, 66, 0.55) 66%);
+  border-color: rgba(165, 190, 228, 0.28);
+}
+.dw-seal svg {
+  width: 29px;
+  height: 29px;
+}
+.dw-wm {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.42rem;
+  line-height: 1.08;
+  color: var(--tx);
+  white-space: nowrap;
+}
+.dw-wm .ib-a {
+  font-style: italic;
+}
+.dw-wm .ib-b {
+  font-style: italic;
+  color: var(--acc);
+  margin-left: 7px;
+}
+.dw-orn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 24px 6px;
+  color: var(--acc);
+}
+.dw-orn i {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(122, 158, 210, 0.45), transparent);
+}
+.dw-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.dw-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9.5px 18px;
+  margin: 2px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dw-med {
+  flex: none;
+  width: 33px;
+  height: 33px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--acc);
+  background: linear-gradient(150deg, rgba(114, 168, 216, 0.26), rgba(114, 168, 216, 0.1));
+  border: 1px solid rgba(114, 168, 216, 0.32);
+}
+.dw-item .dw-en {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.16rem;
+  letter-spacing: 0.08em;
+  color: var(--tx2);
+  line-height: 1;
+}
+.dw-item .dw-cn {
+  font-size: 0.76rem;
+  color: var(--tx3);
+}
+.dw-item.active,
+.dw-item:active {
+  background: rgba(255, 255, 255, 0.5);
+}
+body.theme-infernal .dw-item.active,
+body.theme-infernal .dw-item:active {
+  background: rgba(165, 188, 230, 0.14);
+}
+.dw-foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  padding: 12px 12px calc(12px + var(--sab));
+  border-top: 1px solid var(--line);
+}
+.dw-foot-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  color: var(--tx2);
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: linear-gradient(158deg, rgba(255, 255, 255, 0.34), rgba(214, 230, 250, 0.16));
+}
+body.theme-infernal .dw-foot-btn {
+  background: linear-gradient(158deg, rgba(120, 156, 212, 0.14), rgba(16, 24, 46, 0.28));
+}
+.dw-foot-btn .dwf-ico {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--acc);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.6), rgba(150, 186, 236, 0.2));
+}
+body.theme-infernal .dw-foot-btn .dwf-ico {
+  background: radial-gradient(circle at 32% 28%, rgba(150, 190, 240, 0.3), rgba(20, 30, 56, 0.5));
+}
+
+/* 页面骨架 */
+main {
+  padding: calc(76px + var(--sat)) 14px calc(96px + var(--sab));
+  max-width: 640px;
+  margin: 0 auto;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.plate-title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.32rem;
+  color: var(--tx);
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+.plate-title .cn {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 0.72rem;
+  color: var(--tx3);
+  letter-spacing: 0.16em;
+  margin-left: 10px;
+  font-weight: 400;
+}
+.empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--tx3);
+  font-size: 0.82rem;
+  line-height: 2;
+}
+.empty::before {
+  content: '✦';
+  display: block;
+  font-size: 0.9rem;
+  color: var(--acc);
+  opacity: 0.55;
+  margin-bottom: 9px;
+}
+.hint {
+  font-size: 0.72rem;
+  line-height: 1.85;
+  color: var(--tx3);
+  margin-top: 6px;
+}
+.muted {
+  color: var(--tx3);
+  font-size: 0.8rem;
+}
+
+/* 表单控件（select / textarea 复用输入框外观） */
+.fld,
+textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--tx);
+  font-size: 1rem;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+body.theme-infernal .fld,
+body.theme-infernal textarea {
+  background: rgba(14, 22, 42, 0.5);
+}
+textarea {
+  resize: vertical;
+  line-height: 1.65;
+}
