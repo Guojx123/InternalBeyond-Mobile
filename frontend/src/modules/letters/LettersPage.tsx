@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/apiClient';
 import { GlassCard, SectionTitle, Empty } from '../../components/GlassCard';
+import { Select } from '../../components/ui/Select';
+import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
+import { Modal } from '../../components/ui/Modal';
+import { toast } from '../../components/ui/Toast';
 import { localGetAll, localPut, localDelete } from '../../lib/db';
 import { completeChat, spaceContext } from '../../lib/ai';
 
@@ -22,6 +27,55 @@ interface Letter {
 
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+/** 火漆印章（SVG，替代 emoji） */
+function WaxSeal({ letter, sealed, size = 30 }: { letter: string; sealed: boolean; size?: number }) {
+  const bumps = Array.from({ length: 9 }, (_, i) => {
+    const a = (i / 9) * Math.PI * 2;
+    return { x: 20 + Math.cos(a) * 15, y: 20 + Math.sin(a) * 15 };
+  });
+  return (
+    <svg
+      viewBox="0 0 40 40"
+      width={size}
+      height={size}
+      style={{ color: sealed ? 'var(--danger)' : 'var(--tx3)', opacity: sealed ? 1 : 0.55, flex: 'none' }}
+      aria-label={sealed ? '火漆密封' : '已拆'}
+    >
+      <g fill="currentColor">
+        <circle cx="20" cy="20" r="15" />
+        {bumps.map((b, i) => (
+          <circle key={i} cx={b.x} cy={b.y} r="3.4" />
+        ))}
+      </g>
+      <circle cx="20" cy="20" r="10.5" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
+      <text
+        x="20"
+        y="24.5"
+        textAnchor="middle"
+        fill="rgba(255,255,255,0.92)"
+        fontSize="12"
+        fontFamily="var(--serif), serif"
+      >
+        {letter}
+      </text>
+    </svg>
+  );
+}
+
+/** 信封瓦片上的信封图形 */
+function EnvelopeArt({ sealed }: { sealed: boolean }) {
+  return (
+    <svg viewBox="0 0 64 40" width="100%" height="40" style={{ display: 'block' }} aria-hidden>
+      <rect x="2" y="2" width="60" height="36" rx="6" fill="var(--soft)" stroke="var(--line)" />
+      {sealed ? (
+        <path d="M2 8 L32 26 L62 8" fill="none" stroke="var(--line)" strokeWidth="1.4" />
+      ) : (
+        <path d="M2 38 L24 18 M62 38 L40 18" fill="none" stroke="var(--line)" strokeWidth="1.2" />
+      )}
+    </svg>
+  );
+}
+
 export default function LettersPage() {
   const [letters, setLetters] = useState<Letter[]>([]);
   const [ports, setPorts] = useState<AiPort[]>([]);
@@ -30,7 +84,6 @@ export default function LettersPage() {
   const [body, setBody] = useState('');
   const [open, setOpen] = useState<Letter | null>(null);
   const [ghostBusy, setGhostBusy] = useState(false);
-  const [ghostMsg, setGhostMsg] = useState('');
 
   useEffect(() => {
     load();
@@ -43,7 +96,7 @@ export default function LettersPage() {
   }
 
   async function send() {
-    if (!subject.trim() || !body.trim()) return;
+    if (!subject.trim() || !body.trim()) return toast('主题和正文都要填');
     const recipient = ports.find((p) => p._id === to);
     const letter: Letter = {
       docId: uid(),
@@ -57,6 +110,7 @@ export default function LettersPage() {
     await localPut('letters', letter.docId, letter as unknown as Record<string, unknown>);
     setSubject('');
     setBody('');
+    toast('信已投递');
     load();
   }
 
@@ -72,16 +126,15 @@ export default function LettersPage() {
   async function del(id: string) {
     await localDelete('letters', id);
     setOpen(null);
+    toast('信已销毁');
     load();
   }
 
-  const recipientName = (id?: string) => ports.find((p) => p._id === id)?.nickname || id || 'TA';
-
   // AI 代笔：以选中 AI 的口吻，结合我的名片，给「我」写一封信
   async function aiDraft() {
-    if (!to) return setGhostMsg('先选择接收的 AI');
+    if (!to) return toast('先选择接收的 AI');
     setGhostBusy(true);
-    setGhostMsg('TA 正在写信…');
+    toast('TA 正在写信…');
     try {
       const ctx = await spaceContext();
       const who = ports.find((p) => p._id === to);
@@ -92,9 +145,9 @@ export default function LettersPage() {
       const obj = m ? JSON.parse(m[0]) : {};
       if (obj.subject) setSubject(obj.subject);
       if (obj.body) setBody(obj.body);
-      setGhostMsg('已代笔，可修改后投递');
+      toast('已代笔，可修改后投递');
     } catch (e) {
-      setGhostMsg((e as Error).message);
+      toast((e as Error).message);
     } finally {
       setGhostBusy(false);
     }
@@ -102,9 +155,9 @@ export default function LettersPage() {
 
   // AI 主动来信：让选中的 AI 以「给我的信」口吻，主动写一封火漆密封的信投入信箱
   async function receiveLetter() {
-    if (!to) return setGhostMsg('先选择接收的 AI');
+    if (!to) return toast('先选择接收的 AI');
     setGhostBusy(true);
-    setGhostMsg('TA 正在给你写信…');
+    toast('TA 正在给你写信…');
     try {
       const ctx = await spaceContext();
       const who = ports.find((p) => p._id === to);
@@ -124,10 +177,10 @@ export default function LettersPage() {
         createdAt: Date.now(),
       };
       await localPut('letters', letter.docId, letter as unknown as Record<string, unknown>);
-      setGhostMsg('信已投入信箱（火漆密封）');
+      toast('信已投入信箱（火漆密封）');
       load();
     } catch (e) {
-      setGhostMsg((e as Error).message);
+      toast((e as Error).message);
     } finally {
       setGhostBusy(false);
     }
@@ -140,51 +193,83 @@ export default function LettersPage() {
 
       <SectionTitle en="Write" cn="写一封信" />
       <GlassCard>
-        <div style={{ display: 'grid', gap: 10 }}>
-          <select className="fld" value={to} onChange={(e) => setTo(e.target.value)}>
+        <div className="field">
+          <span className="fld-lb">收件人</span>
+          <Select value={to} onChange={(e) => setTo(e.target.value)}>
             <option value="">（选择接收的 AI）</option>
-            {ports.map((p) => <option key={p._id} value={p._id}>{p.nickname || p.name}</option>)}
-          </select>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="主题" />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="正文…" style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 12, padding: 10, background: 'var(--panel)', color: 'var(--tx)', fontFamily: 'inherit' }} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <button className="btn" disabled={ghostBusy} onClick={aiDraft}>AI 代笔</button>
-            <button className="btn" disabled={ghostBusy} onClick={receiveLetter}>✉️ 收 TA 的来信</button>
-            <button className="btn primary" style={{ flex: 1 }} onClick={send}>{ghostBusy ? 'TA 写信中…' : '投递'}</button>
-          </div>
-          {ghostMsg && <p className="muted" style={{ marginTop: 6 }}>{ghostMsg}</p>}
+            {ports.map((p) => (
+              <option key={p._id} value={p._id}>{p.nickname || p.name}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="field">
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="主题" />
+        </div>
+        <div className="field">
+          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="正文…" />
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button className="btn" disabled={ghostBusy} onClick={aiDraft}>AI 代笔</button>
+          <button className="btn" disabled={ghostBusy} onClick={receiveLetter}>✉️ 收 TA 的来信</button>
+          <button className="btn primary" style={{ flex: 1 }} onClick={send}>{ghostBusy ? 'TA 写信中…' : '投递'}</button>
         </div>
       </GlassCard>
 
       <SectionTitle en="Mailbox" cn="信箱" />
       {letters.length === 0 && <Empty text="信箱空空如也" />}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 10 }}>
         {letters.map((l) => (
           <div
             key={l.docId}
             onClick={() => (l.sealed ? unseal(l.docId) : setOpen(l))}
             className="glass"
-            style={{ padding: 14, borderRadius: 14, cursor: 'pointer', minHeight: 90, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+            style={{ padding: 12, borderRadius: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 8 }}
           >
-            <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{l.sealed ? '🔥 火漆密封' : l.subject}</div>
-            <div className="muted" style={{ fontSize: '0.7rem' }}>
-              {l.fromId ? `${l.from} → 我` : `我 → ${l.to}`}
+            <EnvelopeArt sealed={l.sealed} />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <WaxSeal letter={(l.fromId ? l.from : l.to).slice(0, 1)} sealed={l.sealed} size={28} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {l.sealed ? '火漆密封' : l.subject}
+                </div>
+                <div className="muted" style={{ fontSize: '0.66rem' }}>
+                  {l.fromId ? `${l.from} → 我` : `我 → ${l.to}`}
+                </div>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {open && (
-        <div className="glass card" style={{ position: 'fixed', inset: '8% 5%', zIndex: 50, overflowY: 'auto', padding: 22 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontFamily: 'var(--serif)' }}>{open.subject}</h3>
-            <button className="btn" onClick={() => setOpen(null)}>关闭</button>
-          </div>
-          <div className="muted" style={{ margin: '6px 0 12px' }}>{open.from} → {open.to}</div>
-          <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.9, fontSize: '0.9rem' }}>{open.body}</div>
-          <button className="btn danger" style={{ marginTop: 16 }} onClick={() => del(open.docId)}>销毁此信</button>
-        </div>
-      )}
+      {/* 读信 Modal */}
+      <Modal
+        open={!!open}
+        onClose={() => setOpen(null)}
+        wide
+        title={open ? (open.fromId ? `${open.from} → 我` : `我 → ${open.to}`) : ''}
+        footer={
+          open && (
+            <>
+              <button className="btn danger" onClick={() => del(open.docId)}>销毁此信</button>
+              <button className="btn primary" onClick={() => setOpen(null)}>合上</button>
+            </>
+          )
+        }
+      >
+        {open && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <WaxSeal letter={(open.fromId ? open.from : open.to).slice(0, 1)} sealed={false} size={40} />
+              <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 600, fontSize: '1.2rem', color: 'var(--tx)' }}>
+                {open.subject}
+              </h3>
+            </div>
+            <div className="dlg-body" style={{ lineHeight: 1.9, fontSize: '0.9rem' }}>
+              {open.body}
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

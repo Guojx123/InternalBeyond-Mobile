@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { GlassCard, SectionTitle, Empty } from '../../components/GlassCard';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { toast } from '../../components/ui/Toast';
 import { localGetAll, localPut, localDelete, kvGet, kvSet } from '../../lib/db';
 import { api } from '../../lib/apiClient';
 import { completeChat } from '../../lib/ai';
@@ -53,8 +56,6 @@ export default function ICodePage() {
   // GitHub
   const [ghToken, setGhToken] = useState('');
   const [ghRepos, setGhRepos] = useState<Repo[]>([]);
-  const [ghMsg, setGhMsg] = useState('');
-  const [pushMsg, setPushMsg] = useState('');
 
   useEffect(() => {
     loadProjects();
@@ -101,6 +102,7 @@ export default function ICodePage() {
     const updated = { ...curFile, content: fileContent, lang, updatedAt: Date.now() };
     await localPut('projectFiles', curFile.docId, updated as unknown as Record<string, unknown>);
     setCurFile(updated);
+    toast('已保存');
   }
 
   async function delFile(id: string) {
@@ -117,10 +119,10 @@ export default function ICodePage() {
   // ── GitHub（PAT 仅存本地 kv，不进同步/备份）──
   async function saveGh() {
     await kvSet('ghToken', ghToken);
-    setGhMsg('已保存（仅本机）');
+    toast('已保存（仅本机）');
   }
   async function listRepos() {
-    setGhMsg('加载中…');
+    toast('加载中…');
     try {
       const r = await fetch('https://api.github.com/user/repos?per_page=50', {
         headers: { Authorization: `Bearer ${ghToken}` },
@@ -128,9 +130,9 @@ export default function ICodePage() {
       if (!r.ok) throw new Error('GitHub ' + r.status);
       const data = (await r.json()) as Repo[];
       setGhRepos(data);
-      setGhMsg(`共 ${data.length} 个仓库`);
+      toast(`共 ${data.length} 个仓库`);
     } catch (e) {
-      setGhMsg((e as Error).message);
+      toast((e as Error).message);
     }
   }
   async function importRepo(full: string, branch: string) {
@@ -151,13 +153,17 @@ export default function ICodePage() {
     } catch {
       /* 忽略树拉取失败，仍建空项目 */
     }
+    toast('仓库已导入');
     loadProjects();
   }
 
   // AI 读写：以指令改写当前文件内容
   async function aiRewrite() {
     if (!curFile) return;
-    if (!selPort) return setAiBusy(false), setPushMsg('请先选择 AI 端口');
+    if (!selPort) {
+      setAiBusy(false);
+      return toast('请先选择 AI 端口');
+    }
     setAiBusy(true);
     try {
       const out = await completeChat({
@@ -170,19 +176,20 @@ export default function ICodePage() {
         maxTokens: 4000,
       });
       setFileContent(out.trim());
-      setPushMsg('AI 已改写（保存后生效）');
+      toast('AI 已改写（保存后生效）');
     } catch (e) {
-      setPushMsg((e as Error).message);
+      toast((e as Error).message);
     } finally {
       setAiBusy(false);
     }
   }
 
   // 一键推回 GitHub：把该项目所有已关联路径的文件 PUT 回仓库
-  async function pushToGh(project: Project) {    if (!project.gh) return setPushMsg('该项目未关联 GitHub（仅导入的仓库可推回）');
+  async function pushToGh(project: Project) {
+    if (!project.gh) return toast('该项目未关联 GitHub（仅导入的仓库可推回）');
     const token = await kvGet<string>('ghToken');
-    if (!token) return setPushMsg('先填写 GitHub PAT 并保存');
-    setPushMsg('推回中…');
+    if (!token) return toast('先填写 GitHub PAT 并保存');
+    toast('推回中…');
     const rows = (await localGetAll('projectFiles')).map((r) => r.data as unknown as ProjectFile);
     const fs = rows.filter((f) => f.projectId === project.docId && f.gh?.path);
     let ok = 0;
@@ -205,16 +212,16 @@ export default function ICodePage() {
         });
         if (!put.ok) {
           const e = (await put.json().catch(() => ({}))) as any;
-          setPushMsg(`推回失败 ${f.name}: ${e.message || put.status}`);
+          toast(`推回失败 ${f.name}: ${e.message || put.status}`);
           return;
         }
         ok++;
       } catch (e) {
-        setPushMsg((e as Error).message);
+        toast((e as Error).message);
         return;
       }
     }
-    setPushMsg(`已推回 ${ok} 个文件到 ${project.gh.repo}`);
+    toast(`已推回 ${ok} 个文件到 ${project.gh.repo}`);
   }
 
   const curProj = projects.find((p) => p.docId === curProject);
@@ -224,12 +231,12 @@ export default function ICodePage() {
       <SectionTitle en="ICode" cn="文件工作区" />
       <p className="hint">你与 AI 共用的文件工作区：项目分组、文件读写。GitHub 分区用 PAT 直连（令牌仅存本机、不进备份）。</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="icode-grid">
         {/* 项目 + 文件 */}
         <GlassCard>
           <SectionTitle en="Projects" cn="项目" />
           <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-            <input className="fld" value={projName} onChange={(e) => setProjName(e.target.value)} placeholder="新项目名" style={{ flex: 1 }} />
+            <Input value={projName} onChange={(e) => setProjName(e.target.value)} placeholder="新项目名" style={{ flex: 1 }} />
             <button className="btn primary" onClick={addProject}>＋</button>
           </div>
           {projects.map((p) => (
@@ -241,16 +248,23 @@ export default function ICodePage() {
 
           <SectionTitle en="Files" cn="文件" />
           <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-            <input className="fld" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="文件名" style={{ flex: 1 }} />
-            <select className="fld" value={lang} onChange={(e) => setLang(e.target.value)}>
-              {['txt', 'md', 'js', 'ts', 'json', 'html', 'css', 'py', 'sh'].map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
+            <Input value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="文件名" style={{ flex: 1, minWidth: 0 }} />
+            <div style={{ flex: 'none', width: 90 }}>
+              <Select value={lang} onChange={(e) => setLang(e.target.value)}>
+                {['txt', 'md', 'js', 'ts', 'json', 'html', 'css', 'py', 'sh'].map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </Select>
+            </div>
             <button className="btn primary" onClick={addFile} disabled={!curProject}>＋</button>
           </div>
           {files.map((f) => (
             <div key={f.docId} className="li" onClick={() => openFile(f)} style={{ marginBottom: 6 }}>
-              <div className="li-main"><div className="li-name">{f.name}</div></div>
-              <button className="btn danger" onClick={(e) => { e.stopPropagation(); delFile(f.docId); }}>×</button>
+              <div className="li-main">
+                <div className="li-name">{f.name}</div>
+                <div className="muted" style={{ fontSize: '0.64rem' }}>{f.lang}</div>
+              </div>
+              <button className="btn danger" style={{ padding: '3px 10px', fontSize: '0.7rem' }} onClick={(e) => { e.stopPropagation(); delFile(f.docId); }}>×</button>
             </div>
           ))}
         </GlassCard>
@@ -260,26 +274,28 @@ export default function ICodePage() {
           <SectionTitle en="Editor" cn={curFile ? curFile.name : '编辑器'} />
           {curFile ? (
             <>
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                <select value={selPort} onChange={(e) => setSelPort(e.target.value)} className="fld" style={{ flex: 1 }}>
-                  {ports.map((p) => <option key={p._id} value={p._id}>{p.nickname || p.name}</option>)}
-                </select>
+              <div className="field">
+                <Select value={selPort} onChange={(e) => setSelPort(e.target.value)}>
+                  {ports.map((p) => (
+                    <option key={p._id} value={p._id}>{p.nickname || p.name}</option>
+                  ))}
+                </Select>
               </div>
               <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                <input className="fld" value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="AI 指令（如：加注释/重构/修正 bug）" style={{ flex: 1 }} />
+                <Input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="AI 指令（如：加注释/重构/修正 bug）" style={{ flex: 1 }} />
                 <button className="btn" disabled={aiBusy} onClick={aiRewrite}>AI 改写</button>
               </div>
               <textarea
+                className="icode-editor"
                 value={fileContent}
                 onChange={(e) => setFileContent(e.target.value)}
                 rows={14}
-                style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 12, padding: 10, background: 'var(--panel)', color: 'var(--tx)', fontFamily: 'var(--monoP)', fontSize: '0.8rem' }}
+                spellCheck={false}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button className="btn primary" onClick={saveFile}>保存</button>
                 {curProj?.gh && <button className="btn" onClick={() => pushToGh(curProj!)}>一键推回 GitHub</button>}
               </div>
-              {pushMsg && <p className="muted" style={{ marginTop: 6 }}>{pushMsg}</p>}
             </>
           ) : (
             <Empty text="选择左侧文件开始编辑" />
@@ -291,11 +307,10 @@ export default function ICodePage() {
       <SectionTitle en="GitHub" cn="GitHub 分区" />
       <GlassCard>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input type="password" className="fld" value={ghToken} onChange={(e) => setGhToken(e.target.value)} placeholder="GitHub PAT" style={{ flex: 1 }} />
+          <Input type="password" value={ghToken} onChange={(e) => setGhToken(e.target.value)} placeholder="GitHub PAT" style={{ flex: 1 }} />
           <button className="btn" onClick={saveGh}>保存</button>
           <button className="btn" onClick={listRepos}>列仓库</button>
         </div>
-        <div className="muted" style={{ marginTop: 6 }}>{ghMsg}</div>
         <div style={{ marginTop: 8, maxHeight: 180, overflowY: 'auto' }}>
           {ghRepos.map((r) => (
             <div key={r.full_name} className="li" style={{ marginBottom: 6 }}>

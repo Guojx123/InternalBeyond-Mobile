@@ -4,6 +4,9 @@ import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { TopBar } from './components/TopBar';
 import { Drawer } from './components/Drawer';
+import { BottomDock } from './components/BottomDock';
+import { ToastHost } from './components/ui/Toast';
+import { ConfirmHost } from './components/ui/Modal';
 import { onOnline } from './lib/sync';
 import { api } from './lib/apiClient';
 
@@ -110,27 +113,30 @@ function Shell() {
       />
       <Drawer open={drawer} onClose={() => setDrawer(false)} />
       <main>
-        <Routes>
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/data" element={<DataPage />} />
-          {/* 已迁移模块 */}
-          <Route path="/circle" element={<CirclePage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/letters" element={<LettersPage />} />
-          <Route path="/memory" element={<MemoryPage />} />
-          <Route path="/music" element={<MusicPage />} />
-          <Route path="/icode" element={<ICodePage />} />
-          <Route path="/visual" element={<VisualPage />} />
-          <Route path="/diy" element={<DIYPage />} />
-          <Route path="/lock" element={<LockPage />} />
-          <Route path="/api" element={<ApiPage />} />
-          <Route path="/guide" element={<GuidePage />} />
-          <Route path="*" element={<HomePage />} />
-        </Routes>
+        {/* pathname 作 key：一级路由切换时重挂载并播放 subIn 侧滑转场 */}
+        <div className="sub-in" key={location.pathname}>
+          <Routes>
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/data" element={<DataPage />} />
+            {/* 已迁移模块 */}
+            <Route path="/circle" element={<CirclePage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/letters" element={<LettersPage />} />
+            <Route path="/memory" element={<MemoryPage />} />
+            <Route path="/music" element={<MusicPage />} />
+            <Route path="/icode" element={<ICodePage />} />
+            <Route path="/visual" element={<VisualPage />} />
+            <Route path="/diy" element={<DIYPage />} />
+            <Route path="/lock" element={<LockPage />} />
+            <Route path="/api" element={<ApiPage />} />
+            <Route path="/guide" element={<GuidePage />} />
+            <Route path="*" element={<HomePage />} />
+          </Routes>
+        </div>
       </main>
-      <button className="btn" style={{ position: 'fixed', bottom: 18, right: 18, zIndex: 30 }} onClick={() => navigate('/home')}>⌂</button>
+      <BottomDock onGo={(to) => (to === 'drawer' ? setDrawer(true) : navigate(to))} />
     </>
   );
 }
@@ -164,6 +170,8 @@ export default function App() {
     <>
       {showLock && <LockScreen onUnlock={() => setShowLock(false)} />}
       <Shell />
+      <ToastHost />
+      <ConfirmHost />
     </>
   );
 }

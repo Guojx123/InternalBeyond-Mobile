@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/apiClient';
 import { localGetAll, localPut, localGet } from '../../lib/db';
 import { streamChat } from '../../lib/stream';
+import { Avatar } from '../../components/ui/Avatar';
+import { Select } from '../../components/ui/Select';
 
 interface AiConfig {
   _id: string;
@@ -14,6 +16,10 @@ interface Msg {
   role: 'user' | 'assistant' | 'system';
   content: string;
   ts: number;
+  /** 可选思考链（仅当数据携带时渲染，现状无此字段则不造 UI） */
+  thinking?: string;
+  /** 可选操作卡片（仅当数据携带时渲染） */
+  actions?: string[];
 }
 interface Thread {
   docId: string;
@@ -77,6 +83,14 @@ export default function ChatPage() {
     setMessages(msgs);
   }
 
+  async function switchPort(cfgId: string) {
+    if (thread) {
+      const next = { ...thread, members: [cfgId] };
+      setThread(next);
+      await localPut('chatThreads', next.docId, next as unknown as Record<string, unknown>);
+    }
+  }
+
   async function send() {
     if (!input.trim() || !thread || busy) return;
     const cfgId = thread.members[0];
@@ -124,22 +138,49 @@ export default function ChatPage() {
     }
   }
 
+  const cfg = configs.find((c) => c._id === thread?.members[0]);
+  const aiName = cfg?.nickname || cfg?.name || 'AI';
+
   return (
-    <div className="page" style={{ display: 'flex', flexDirection: 'column', minHeight: '70vh' }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
-        <select
-          value={thread?.docId || ''}
-          onChange={(e) => {
-            const t = threads.find((x) => x.docId === e.target.value);
-            if (t) openThread(t);
-          }}
-          style={{ flex: 1, padding: 8, borderRadius: 12, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--tx)' }}
-        >
-          {threads.map((t) => (
-            <option key={t.docId} value={t.docId}>{t.title}</option>
-          ))}
-        </select>
-        <button className="btn" onClick={() => configs[0] && newThread(configs[0]._id)}>+ 新对话</button>
+    <div className="page" style={{ display: 'flex', flexDirection: 'column', minHeight: '72vh' }}>
+      {/* 会话顶栏（参考 .cv-head） */}
+      <div className="cv-head glass">
+        <Avatar glyph="✶" name={aiName} size={34} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--tx)', fontWeight: 600, lineHeight: 1.3 }}>
+            {thread?.title || 'InternalBeyond'}
+          </div>
+          <div className="muted" style={{ fontSize: '0.68rem' }}>{aiName}</div>
+        </div>
+        <button className="btn" style={{ padding: '6px 12px', fontSize: '0.72rem' }} onClick={() => configs[0] && newThread(configs[0]._id)}>
+          + 新对话
+        </button>
+      </div>
+
+      {/* 线程 / 端口选择（参考 #cv-selbar） */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <div className="cv-selbar">
+          <Select
+            value={thread?.docId || ''}
+            onChange={(e) => {
+              const t = threads.find((x) => x.docId === e.target.value);
+              if (t) openThread(t);
+            }}
+            style={{ flex: 1 }}
+          >
+            {threads.length === 0 && <option value="">暂无会话</option>}
+            {threads.map((t) => (
+              <option key={t.docId} value={t.docId}>{t.title}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="cv-selbar">
+          <Select value={thread?.members[0] || ''} onChange={(e) => switchPort(e.target.value)} style={{ flex: 1 }}>
+            {configs.map((c) => (
+              <option key={c._id} value={c._id}>{c.nickname || c.name}</option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       {!configs.length && (
@@ -148,33 +189,40 @@ export default function ChatPage() {
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 4 }}>
         {messages.map((m) => (
-          <div key={m.docId} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', margin: '8px 0' }}>
-            <div
-              className="glass"
-              style={{
-                maxWidth: '82%',
-                padding: '10px 13px',
-                borderRadius: 16,
-                fontSize: '0.86rem',
-                lineHeight: 1.7,
-                whiteSpace: 'pre-wrap',
-                background: m.role === 'user' ? 'var(--soft)' : 'var(--panel)',
-              }}
-            >
+          <div key={m.docId} className={`cv-row${m.role === 'user' ? ' me' : ''}`}>
+            <Avatar
+              glyph={m.role === 'user' ? '我' : '✶'}
+              name={m.role === 'user' ? '我' : aiName}
+              size={30}
+            />
+            <div className="cv-bubble">
+              {m.thinking && (
+                <details className="cv-think">
+                  <summary>思考链</summary>
+                  <div>{m.thinking}</div>
+                </details>
+              )}
               {m.content || '…'}
+              {m.actions && m.actions.length > 0 && (
+                <div className="cv-actions">
+                  {m.actions.map((a, i) => (
+                    <button key={i} className="btn" style={{ padding: '5px 12px', fontSize: '0.72rem' }}>{a}</button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+      {/* 输入栏（参考 .cv-input） */}
+      <div className="cv-input glass">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
           placeholder={busy ? '回复中…' : '说点什么（Enter 发送）'}
           rows={2}
-          style={{ flex: 1, padding: 10, borderRadius: 14, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--tx)', resize: 'none' }}
         />
         <button className="btn primary" disabled={busy} onClick={send}>发送</button>
       </div>

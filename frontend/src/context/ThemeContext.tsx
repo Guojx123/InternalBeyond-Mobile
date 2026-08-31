@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { kvGet, kvSet } from '../lib/db';
 
 type Theme = 'internal' | 'infernal';
@@ -13,6 +13,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('internal');
+  // 首次渲染不回写：否则挂载即把默认值写入 kv，会覆盖尚未读出的持久化主题（竞态导致刷新后偶发丢主题）
+  const firstRun = useRef(true);
 
   useEffect(() => {
     kvGet<Theme>('theme').then((t) => {
@@ -23,12 +25,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     apply(theme);
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
     kvSet('theme', theme);
   }, [theme]);
 
   function apply(t: Theme) {
+    // 明亮态由 :root 默认承载，仅暗色需要 theme-infernal（无 CSS 消费 theme-internal，已移除）
     document.body.classList.toggle('theme-infernal', t === 'infernal');
-    document.body.classList.toggle('theme-internal', t === 'internal');
     const meta = document.getElementById('meta-theme-color') as HTMLMetaElement | null;
     if (meta) meta.setAttribute('content', t === 'infernal' ? '#141a2e' : '#dfe9f6');
   }

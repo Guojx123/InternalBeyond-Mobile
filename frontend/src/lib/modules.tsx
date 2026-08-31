@@ -28,3 +28,32 @@ export const MODULES: ModuleDef[] = [
 export function moduleByKey(key: string): ModuleDef | undefined {
   return MODULES.find((m) => m.key === key);
 }
+
+/* ============================================================================
+   底部 Dock 主 Tab
+   ----------------------------------------------------------------------------
+   默认四项：Home / Chat / Circle / 菜单(☰)。
+   末项 'drawer' 为特殊项，点击打开抽屉（其余 12 个模块仍由 Drawer 全量进入）。
+   图标统一取自 MODULES[].glyph，避免 Dock / Drawer / 桌面三处漂移。
+   ========================================================================== */
+export interface DockTab {
+  /** 模块 key；'drawer' 表示打开抽屉 */
+  key: string;
+  en: string;
+  cn: string;
+  /** 跳转路径；drawer 项为空串 */
+  path: string;
+}
+
+export const DOCK_TABS: DockTab[] = [
+  { key: 'home', en: 'Home', cn: '主页', path: '/home' },
+  { key: 'chat', en: 'Chat', cn: '对话', path: '/chat' },
+  { key: 'circle', en: 'Circle', cn: '社交圈', path: '/circle' },
+  { key: 'drawer', en: 'More', cn: '菜单', path: '' },
+];
+
+/** Dock 项图标：非抽屉项读模块 glyph，抽屉项固定 ☰ */
+export function dockGlyph(key: string): string {
+  if (key === 'drawer') return '☰';
+  return moduleByKey(key)?.glyph || '◯';
+}

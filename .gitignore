@@ -21,3 +21,6 @@ npm-debug.log*
 
 # Render / misc
 .render/
+
+# WorkBuddy local agent data (memory, artifacts)
+.workbuddy/

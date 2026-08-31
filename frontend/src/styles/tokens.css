@@ -1,23 +1,45 @@
+/* ============================================================================
+   InternalBeyond · 设计令牌（Design Tokens）—— 单一数据源
+   ----------------------------------------------------------------------------
+   · :root               = Internal（明亮）主题
+   · body.theme-infernal = Infernal（暗色）主题
+   · 控件样式（.btn / .fld / .li / .chip …）集中在本文件
+   · 布局与外壳骨架（顶栏 / 抽屉 / 页面）见 base.css
+   · 本文件与 base.css 的重复选择器已去重，勿再两处定义
+   ========================================================================== */
+
 :root {
-  /* 设计令牌：从原 index.html 抽出的液态玻璃 / 双主题变量 */
+  /* ── 安全区 ── */
   --sat: env(safe-area-inset-top, 0px);
   --sar: env(safe-area-inset-right, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
 
-  /* Internal（明亮） */
+  /* ── 玻璃强度（Visual 页「模糊」滑块可调；仅 --ibBlur 与参考一致，--ibSat 为本项目扩展） ── */
+  --ibBlur: 20px;
+  --ibSat: 1.55;
+
+  /* ── Internal（明亮）── */
   --tx: #0a1e42;
   --tx2: #3d5788;
   --tx3: #7d92b5;
-  --acc: #2a6bb0;
+  /* --acc-custom：Visual 页自定义主色写入点。亮/暗两套同时生效（详见 §2 visual 主色机制修正） */
+  --acc: var(--acc-custom, #2a6bb0);
   --glass: rgba(255, 255, 255, 0.4);
   --glass-line: rgba(255, 255, 255, 0.74);
   --glass-shadow: 0 10px 36px rgba(90, 120, 170, 0.14);
   --panel: rgba(255, 255, 255, 0.4);
   --panel-line: rgba(255, 255, 255, 0.7);
+  --soft: rgba(255, 255, 255, 0.32);
   --line: rgba(140, 170, 220, 0.32);
+  --think: #51678f;
+  --think-line: rgba(120, 155, 210, 0.45);
+  --sheet: rgba(252, 254, 255, 0.82);
+  --scrim: linear-gradient(180deg, rgba(245, 250, 255, 0.22), rgba(240, 247, 255, 0.5));
   --danger: #c05555;
   --gold: #c9a86a;
+
+  /* ── 字体（唯一一份，勿在 base.css 重复） ── */
   --serif: 'Cormorant Garamond', Georgia, 'Noto Serif SC', 'Songti SC', serif;
   --disp: 'Raleway', 'Noto Sans SC', 'PingFang SC', sans-serif;
   --sys: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
@@ -25,26 +47,75 @@
 }
 
 body.theme-infernal {
-  /* Infernal（暗色） */
+  /* ── Infernal（暗色）── */
   --tx: #e0e6f2;
   --tx2: #adb8d0;
   --tx3: #7e90b2;
-  --acc: #72a8d8;
+  --acc: var(--acc-custom, #72a8d8);
   --glass: rgba(20, 28, 52, 0.46);
   --glass-line: rgba(165, 188, 230, 0.26);
   --glass-shadow: 0 10px 36px rgba(0, 0, 0, 0.32);
   --panel: rgba(18, 26, 48, 0.5);
   --panel-line: rgba(165, 188, 230, 0.22);
+  --soft: rgba(24, 33, 58, 0.42);
   --line: rgba(165, 188, 230, 0.22);
+  --think: #8ba0c4;
+  --think-line: rgba(140, 170, 215, 0.35);
+  --sheet: rgba(20, 28, 50, 0.84);
+  --scrim: linear-gradient(180deg, rgba(8, 12, 24, 0.5), rgba(5, 8, 18, 0.77));
   --danger: #e08a8a;
   --gold: #d0a44e;
 }
 
+/* ============================================================================
+   全局重置（唯一一份）
+   ========================================================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(114, 168, 216, 0.32) transparent;
+}
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(114, 168, 216, 0.32);
+  border-radius: 3px;
+}
+
+/* ============================================================================
+   页面底色 + 极光呼吸层（保留项目原有极光渐变，不替换为参考的模糊照片背景）
+   ========================================================================== */
+html,
+body {
+  height: 100%;
+}
+html {
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
+  font-weight: 400;
+  color: var(--tx);
+  min-height: 100vh;
+  padding: calc(24px + var(--sat)) 16px calc(24px + var(--sab));
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  background: radial-gradient(140% 120% at 12% 0%, #eaf2fb 0%, #d6e3f4 46%, #c6d6ec 100%);
+}
+
+/* 暗色：径向渐变（原被 base.css 的纯色行覆盖，现已删除该行，渐变恢复生效） */
+body.theme-infernal {
+  background: radial-gradient(140% 120% at 12% 0%, #1b2440 0%, #141a2e 50%, #0d1322 100%);
 }
 
 /* 柔光氛围：固定一层缓慢呼吸的光晕，强化液态玻璃质感 */
@@ -65,55 +136,22 @@ body::before {
   to { transform: translate3d(3%, 2%, 0) scale(1.06); }
 }
 
-body {
-  font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
-  color: var(--tx);
-  min-height: 100vh;
-  padding: calc(24px + var(--sat)) 16px calc(24px + var(--sab));
-  background: radial-gradient(140% 120% at 12% 0%, #eaf2fb 0%, #d6e3f4 46%, #c6d6ec 100%);
-}
-
-body.theme-infernal {
-  background: radial-gradient(140% 120% at 12% 0%, #1b2440 0%, #141a2e 50%, #0d1322 100%);
-}
-
+/* ============================================================================
+   玻璃容器
+   ========================================================================== */
 .glass {
   position: relative;
   overflow: hidden;
   background:
     linear-gradient(155deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18) 52%, rgba(214, 231, 248, 0.32));
   border: 1px solid var(--glass-line);
-  backdrop-filter: blur(20px) saturate(1.55);
-  -webkit-backdrop-filter: blur(20px) saturate(1.55);
+  backdrop-filter: blur(var(--ibBlur)) saturate(var(--ibSat));
+  -webkit-backdrop-filter: blur(var(--ibBlur)) saturate(var(--ibSat));
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   border-radius: 20px;
 }
 body.theme-infernal .glass {
   background: linear-gradient(155deg, rgba(120, 156, 212, 0.2), rgba(16, 24, 46, 0.34) 52%, rgba(40, 56, 92, 0.24));
-}
-
-.card {
-  position: relative;
-  overflow: hidden;
-  background: var(--panel);
-  border: 1px solid var(--panel-line);
-  border-radius: 20px;
-  padding: 18px;
-  box-shadow: 0 6px 24px rgba(90, 120, 170, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  margin-bottom: 12px;
-  transition: transform 0.18s ease, box-shadow 0.25s ease;
-  animation: cardIn 0.5s cubic-bezier(0.22, 0.72, 0.28, 1) both;
-}
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 34px rgba(90, 120, 170, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.992); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .card { animation: none; }
 }
 
 /* 玻璃高光：一道缓慢游走的斜向反光，强化液态质感 */
@@ -140,13 +178,55 @@ body.theme-infernal .glass {
   50% { background-position: -30% 0; }
   100% { background-position: 130% 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .glass::after, .card::after, body::before { animation: none; }
+
+/* ============================================================================
+   卡片
+   ========================================================================== */
+.card {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 6px 24px rgba(90, 120, 170, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  margin-bottom: 12px;
+  transition: transform 0.18s ease, box-shadow 0.25s ease;
+  animation: cardIn 0.5s cubic-bezier(0.22, 0.72, 0.28, 1) both;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(90, 120, 170, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 body.theme-infernal .card {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(165, 188, 230, 0.16);
 }
 
+/* 设置类卡片（参考 .set-card）：更小圆角 + 全大写小标题 */
+.set-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.set-card > .sc-t {
+  font-family: var(--disp);
+  font-weight: 300;
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  color: var(--tx3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* ============================================================================
+   按钮
+   ========================================================================== */
 .btn {
   display: inline-block;
   padding: 9px 20px;
@@ -155,6 +235,7 @@ body.theme-infernal .card {
   color: var(--tx2);
   font-size: 0.8rem;
   letter-spacing: 0.1em;
+  font-family: inherit;
   cursor: pointer;
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.2));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 14px rgba(90, 120, 170, 0.12);
@@ -175,6 +256,9 @@ body.theme-infernal .card {
   background: linear-gradient(165deg, rgba(192, 85, 85, 0.16), rgba(192, 85, 85, 0.04));
 }
 
+/* ============================================================================
+   表单控件（唯一一份：输入框 / 文本域 / 下拉 —— 与 base.css 的重复定义已合并至此）
+   ========================================================================== */
 .fld,
 input,
 textarea,
@@ -210,7 +294,22 @@ textarea {
 }
 select { cursor: pointer; }
 
-/* 列表行（ICode / Music / Circle 复用） */
+/* 字段行：标签 + 控件，供共享组件与页面复用 */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.field > .fld-lb {
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  color: var(--tx3);
+}
+
+/* ============================================================================
+   列表行（ICode / Music / Circle / API 等复用）
+   ========================================================================== */
 .li {
   display: flex;
   align-items: center;
@@ -230,7 +329,15 @@ body.theme-infernal .li {
 .li-name { font-size: 0.88rem; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .li-side { color: var(--tx3); font-size: 0.76rem; flex: none; }
 
+/* ============================================================================
+   文本工具类
+   ========================================================================== */
 .cn { color: var(--tx3); font-weight: 400; }
+
+.muted {
+  color: var(--tx3);
+  font-size: 0.8rem;
+}
 
 .comment {
   padding: 8px 12px;
@@ -245,7 +352,32 @@ h1 {
   margin-bottom: 4px;
 }
 
-.muted {
-  color: var(--tx3);
-  font-size: 0.8rem;
+/* 代码块（DIY / ICode 结果区复用） */
+pre.code,
+.code {
+  margin: 0;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(140, 170, 220, 0.1);
+  color: var(--tx);
+  font-family: var(--monoP);
+  font-size: 0.74rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* ============================================================================
+   动效无障碍：尊重系统「减弱动态效果」设置
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .glass::after,
+  .card::after,
+  body::before {
+    animation: none !important;
+  }
 }
